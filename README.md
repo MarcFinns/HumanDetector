@@ -24,11 +24,11 @@ git clone https://github.com/tensorflow/models
 
 **PREPARE**
 
-cd model/research
+cd models/research
 
 protoc object_detection/protos/*.proto --python_out=.
 
-cd model/research/object_detection
+cd models/research/object_detection
 
 cp <source>/humanDetector.py humanDetector.py 
 
