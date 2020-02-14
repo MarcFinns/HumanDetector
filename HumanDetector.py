@@ -162,8 +162,8 @@ with detection_graph.as_default():
              cv2.imwrite(IP + ".jpg", cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
 
              with open(IP + ".jpg", "rb") as f:
-                  telegram_send.send(images=[f], captions=["ALERT: Intruder detected: " + str(len(indices))])
-         
+                  telegram_send.send(conf="/etc/telegram-send.conf", images=[f], captions=["ALERT: Intruder detected: " + str(len(indices))])
+             
              # Wait a bit, not to flood telegram
              time.sleep(waitOnDetection)
             
