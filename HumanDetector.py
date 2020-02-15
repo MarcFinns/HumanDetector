@@ -74,7 +74,6 @@ with detection_graph.as_default():
     od_graph_def.ParseFromString(serialized_graph)
     tf.import_graph_def(od_graph_def, name='')
 
-
 # ## Loading label map
 # Label maps map indices to category names, so that when our convolution network predicts `5`, we know that this corresponds to `airplane`.  Here we use internal utility functions, but anything that returns a dictionary mapping integers to appropriate string labels would be fine
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
@@ -86,8 +85,10 @@ category_index = label_map_util.create_category_index(categories)
 IMAGE_SIZE = (12, 8)
 
 # Open stream
-camStream = cv2.VideoCapture(streamURL)
-
+if not camStream.isOpened():
+    print(str(datetime.now()) + " - " + IP + " - ERROR: Could not connect to CAM stream, aborting")
+    quit()
+    
 print(str(datetime.now()) + " - " + IP + " - Processing started")
 with detection_graph.as_default():
   with tf.compat.v1.Session(graph=detection_graph) as sess:
@@ -101,7 +102,12 @@ with detection_graph.as_default():
         
           # Get frame
           ret, frame = camStream.read()
-      
+                  
+          # Check if we got a frame 
+          if not ret :
+              print(str(datetime.now()) + " - " + IP + " - ERROR: CAM did not return a valid frame, reconnecting")
+              raise
+              
        except:
           print(str(datetime.now()) + " - " + IP + " - Error getting snapshot")
           time.sleep(5)
