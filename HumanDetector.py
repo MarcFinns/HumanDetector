@@ -74,6 +74,7 @@ with detection_graph.as_default():
     od_graph_def.ParseFromString(serialized_graph)
     tf.import_graph_def(od_graph_def, name='')
 
+
 # ## Loading label map
 # Label maps map indices to category names, so that when our convolution network predicts `5`, we know that this corresponds to `airplane`.  Here we use internal utility functions, but anything that returns a dictionary mapping integers to appropriate string labels would be fine
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
@@ -85,10 +86,8 @@ category_index = label_map_util.create_category_index(categories)
 IMAGE_SIZE = (12, 8)
 
 # Open stream
-if not camStream.isOpened():
-    print(str(datetime.now()) + " - " + IP + " - ERROR: Could not connect to CAM stream, aborting")
-    quit()
-    
+camStream = cv2.VideoCapture(streamURL)
+
 print(str(datetime.now()) + " - " + IP + " - Processing started")
 with detection_graph.as_default():
   with tf.compat.v1.Session(graph=detection_graph) as sess:
@@ -96,18 +95,18 @@ with detection_graph.as_default():
        try:
           # only process one in X frames
           for i in range(1,frameSkipped):    
-          
                 # Capture frame
                 camStream.grab()
+
+#          startCycle = int(round(time.time() * 1000))
         
           # Get frame
-          ret, frame = camStream.read()
-                  
+          success, frame = camStream.read()
+          
           # Check if we got a frame 
-          if not ret :
+          if not success:  
               print(str(datetime.now()) + " - " + IP + " - ERROR: CAM did not return a valid frame, reconnecting")
               raise
-              
        except:
           print(str(datetime.now()) + " - " + IP + " - Error getting snapshot")
           time.sleep(5)
@@ -117,19 +116,17 @@ with detection_graph.as_default():
           camStream = cv2.VideoCapture(streamURL)
           
        else:
-          # Change colorspace 
-         image_np = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
       
          # Scale frame if needed
          if frameScaling < 100:
-             width = int(image_np.shape[1] * frameScaling / 100)
-             height = int(image_np.shape[0] * frameScaling / 100)
+             width = int(frame.shape[1] * frameScaling / 100)
+             height = int(frame.shape[0] * frameScaling / 100)
              dim = (width, height)
              # resize image
-             image_np = cv2.resize(image_np, dim, interpolation = cv2.INTER_AREA)
+             frame = cv2.resize(frame, dim, interpolation = cv2.INTER_AREA)
       
          # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
-         image_np_expanded = np.expand_dims(image_np, axis=0)
+         frame_expanded = np.expand_dims(frame, axis=0)
          image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
       
          # Each box represents a part of the image where a particular object was detected.
@@ -144,7 +141,7 @@ with detection_graph.as_default():
          # Actual detection.
          (boxes, scores, classes, num_detections) = sess.run(
           [boxes, scores, classes, num_detections],
-          feed_dict={image_tensor: image_np_expanded})
+          feed_dict={image_tensor: frame_expanded})
       
          # ONLY SHOW ONE CLASS (1 = people)
          boxes = np.squeeze(boxes)
@@ -152,20 +149,31 @@ with detection_graph.as_default():
          classes = np.squeeze(classes)
          indices = ((classes == 1) & (scores > confidence)).nonzero()[0]
  
+#         print("Frame processing Completed in " + str(int(round(time.time() * 1000)) - startCycle) + "ms")
+ 
          # In case objects detected, send message
          if len(indices) > 0:
 
              print(str(datetime.now()) + " - " + IP + "- People detected: " + str(len(indices)))
 
              boxes = boxes[indices]          
-             scores = np.squeeze(scores[indices])
-             classes = np.squeeze(classes[indices]) 
+             scores = scores[indices]
+             classes = classes[indices]
 
              # Visualization of the results of a detection
-             vis_util.draw_bounding_boxes_on_image_array(image_np,boxes)
+             #vis_util.draw_bounding_boxes_on_image_array(frame,boxes)
+
+             vis_util.visualize_boxes_and_labels_on_image_array(
+              frame,
+              boxes,
+              classes.astype(np.int32),
+              scores,
+              category_index,
+              use_normalized_coordinates=True,
+              line_thickness=3) 
 
              # Save image for telegram... TODO: is it necessary??
-             cv2.imwrite(IP + ".jpg", cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
+             cv2.imwrite(IP + ".jpg", frame)
 
              with open(IP + ".jpg", "rb") as f:
                   telegram_send.send(conf="/etc/telegram-send.conf", images=[f], captions=["ALERT: Intruder detected: " + str(len(indices))])
@@ -177,8 +185,3 @@ with detection_graph.as_default():
              camStream.release()
              camStream = cv2.VideoCapture(streamURL)
             
-
-
-
-
-
