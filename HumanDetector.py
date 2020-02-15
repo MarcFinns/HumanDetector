@@ -81,7 +81,7 @@ IMAGE_SIZE = (12, 8)
 
 # Open stream
 camStream = cv2.VideoCapture(streamURL)
-if not camStream.isOpened():	camStream = cv2.VideoCapture(streamURL)
+if not camStream.isOpened():
     print(str(datetime.now()) + " - " + IP + " - ERROR: Could not connect to CAM stream, aborting")	
     quit()
 
