@@ -11,7 +11,7 @@ frameSkipped = 10 # Analyse a frame every X
 frameScaling = 50 # Image resize ratio, in percentage
 confidence = 0.6  # Consider object detected if confidence is more than this value
 waitOnDetection = 30 # Seconds
-#night mode
+#Active interval. NOTE: If start and stop are equal, means continuous operation
 startTime = "21:00"
 stopTime = "8:00"
 ###################################################
@@ -121,9 +121,9 @@ with detection_graph.as_default():
     while True:
     
        # Are we now in the defined time interval?
-       if not is_time_between(datetime.datetime.now().time(), 
+       if (startTime != stopTime) and (not is_time_between(datetime.datetime.now().time(),
                               datetime.datetime.strptime(startTime, "%H:%M").time(),
-                              datetime.datetime.strptime(stopTime, "%H:%M").time()):
+                              datetime.datetime.strptime(stopTime, "%H:%M").time())):
        
            # Not now, sleep a bit and check again
            time.sleep(30)
