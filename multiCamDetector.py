@@ -149,8 +149,7 @@ with detection_graph.as_default():
        # Are we now in the defined time interval?
        if (startTime != stopTime) and (not is_time_between(datetime.datetime.now().time(), 
                               datetime.datetime.strptime(startTime, "%H:%M").time(),
-                              datetime.datetime.strptime(stopTime, "%H:%M").time())):
-           print("skipping")       
+                              datetime.datetime.strptime(stopTime, "%H:%M").time())):     
            # Not now, sleep a bit and check again
            time.sleep(30)
       
@@ -162,6 +161,7 @@ with detection_graph.as_default():
               # If cam is in wait mode following a prior detection, skip it
               if int(round(time.time())) - lastDetection[currentCam] < waitOnDetection:
                   currentCam = (currentCam + 1) % len(CAM)
+                  continue
 
               # only process one in X frames
               for i in range(1,frameSkipped):    
